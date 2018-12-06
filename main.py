@@ -23,27 +23,48 @@ def main(args):
     log.debug('DataFrame作成開始')
     df = DataFrame(dict_array)
     log.debug('DataFrame作成完了')
+
     log.debug('Index作成開始')
-    df = df.set_index(df['startDate'])
+    df.index = df['startDate']
+    # df.index = pd.to_datetime(df.index, utc=True).tz_convert('Asia/Tokyo')
+    df.index = pd.to_datetime(df.index).tz_localize('UTC').tz_convert('Asia/Tokyo')
     log.debug('Index作成完了')
 
     print(df.head(100))
 
-    log.debug('各種DataFrame作成1')
-    body_mass = df[df['type'] == 'HKQuantityTypeIdentifierBodyMass'].copy()  # 体重
-    log.debug('各種DataFrame作成2')
+    body_mass = df[(df['type'] == 'HKQuantityTypeIdentifierBodyMass') &
+                   (~ df['sourceName'].str.contains('SmartBand 2'))].copy()  # 体重
     bfp = df[df['type'] == 'HKQuantityTypeIdentifierBodyFatPercentage'].copy()  # 体脂肪率
-    log.debug('各種DataFrame作成3')
     bmi = df[df['type'] == 'HKQuantityTypeIdentifierBodyMassIndex'].copy()  # BMI
 
     # cycling = df[
     #     (df['type'] == 'HKQuantityTypeIdentifierDistanceCycling') & (
     #                 (df['sourceName'] == 'Apple Watch') | (df['sourceName'] == 'Apple Watch 4'))].copy()  # Cycling
-    log.debug('各種DataFrame作成4')
+
     cycling = df[
         (df['type'] == 'HKQuantityTypeIdentifierDistanceCycling') &
         (df['sourceName'].str.contains('Apple Watch'))].copy()  # Cycling
     log.debug('各種DataFrame完了')
+
+    body_mass = body_mass.astype({'value': float})
+    bfp = bfp.astype({'value': float})
+    bmi = bmi.astype({'value': float})
+    cycling = cycling.astype({'value': float})
+
+    cycling_sum = cycling.groupby(pd.Grouper(freq='D')).sum()
+    body_mass_mean = body_mass.groupby(pd.Grouper(freq='D')).mean()
+    bfp_mean = bfp.groupby(pd.Grouper(freq='D')).mean()
+    bmi_mean = bmi.groupby(pd.Grouper(freq='D')).mean()
+
+    df_new = pd.DataFrame(index=body_mass_mean.index, columns=[])
+
+    df_new['体重'] = body_mass_mean['value']
+    df_new['体脂肪率'] = bfp_mean['value']
+    df_new['BMI'] = bmi_mean['value']
+    df_new['自転車走行距離'] = cycling_sum['value']
+
+    df_new.interpolate().to_csv('./df_new{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
+                                float_format='%.4f', index_label='key')
 
     df.to_csv('./healthcare_data_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
               float_format='%.4f', index_label='key')
