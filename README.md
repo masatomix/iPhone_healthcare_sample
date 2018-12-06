@@ -1,11 +1,7 @@
 # iPhone_healthcare_sample
 iPhoneのヘルスケアからデータをExportするサンプル
 
-
-
 ### usage
-
-
 
 ```bash
 $ git clone https://github.com/masatomix/iPhone_healthcare_sample.git
@@ -34,5 +30,13 @@ $ source ./venv/bin/activate
 2017-11-21 07:54:36,2017-11-21 17:15:55 +0900,Cycling,2017-11-21 16:54:36 +0900,HKQuantityTypeIdentifierDistanceCycling,km,4.46
 (venv) $
 
-
 ```
+
+
+### 参考
+- [iPhoneのヘルスケアデータから歩数を日別に集計してCSVファイルにする](https://qiita.com/masato/items/72cf6cad5aa3179d64cc)
+
+
+### リリース履歴
+
+- 0.0.1 新規作成
