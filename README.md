@@ -1,0 +1,2 @@
+# iPhone_healthcare_sample
+iPhoneのヘルスケアからデータをExportするサンプル
