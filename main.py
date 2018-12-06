@@ -10,9 +10,10 @@ from logging import getLogger
 
 def main(args):
     log = logger_configure(getLogger(__name__))
-    log.debug('Parse開始')
 
+    log.debug('Parse開始')
     parsed = objectify.parse(open('書き出したデータ.xml'))
+    # parsed = objectify.parse(open('sample.xml'))
     log.debug('Parse完了')
 
     log.debug('Data配列作成開始')
@@ -21,13 +22,43 @@ def main(args):
 
     log.debug('DataFrame作成開始')
     df = DataFrame(dict_array)
-    df.index = pd.to_datetime(df['startDate'])
     log.debug('DataFrame作成完了')
+    log.debug('Index作成開始')
+    df = df.set_index(df['startDate'])
+    log.debug('Index作成完了')
 
-    log.info(df.head(100))
+    print(df.head(100))
+
+    log.debug('各種DataFrame作成1')
+    body_mass = df[df['type'] == 'HKQuantityTypeIdentifierBodyMass'].copy()  # 体重
+    log.debug('各種DataFrame作成2')
+    bfp = df[df['type'] == 'HKQuantityTypeIdentifierBodyFatPercentage'].copy()  # 体脂肪率
+    log.debug('各種DataFrame作成3')
+    bmi = df[df['type'] == 'HKQuantityTypeIdentifierBodyMassIndex'].copy()  # BMI
+
+    # cycling = df[
+    #     (df['type'] == 'HKQuantityTypeIdentifierDistanceCycling') & (
+    #                 (df['sourceName'] == 'Apple Watch') | (df['sourceName'] == 'Apple Watch 4'))].copy()  # Cycling
+    log.debug('各種DataFrame作成4')
+    cycling = df[
+        (df['type'] == 'HKQuantityTypeIdentifierDistanceCycling') &
+        (df['sourceName'].str.contains('Apple Watch'))].copy()  # Cycling
+    log.debug('各種DataFrame完了')
 
     df.to_csv('./healthcare_data_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
-              float_format='%.4f')
+              float_format='%.4f', index_label='key')
+
+    body_mass.to_csv('./HKQuantityTypeIdentifierBodyMass_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
+                     float_format='%.4f', index_label='key')
+
+    bfp.to_csv('./HKQuantityTypeIdentifierBodyFatPercentage_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
+               float_format='%.4f', index_label='key')
+
+    bmi.to_csv('./HKQuantityTypeIdentifierBodyMassIndex_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
+               float_format='%.4f', index_label='key')
+
+    cycling.to_csv('./HKQuantityTypeIdentifierDistanceCycling_{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
+                   float_format='%.4f', index_label='key')
 
 
 def create_dict_array(parsed):
