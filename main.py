@@ -6,10 +6,13 @@ from pandas import DataFrame
 from datetime import datetime
 import sys
 from logging import getLogger
+import logging.config
 
 
 def main(args):
-    log = logger_configure(getLogger(__name__))
+
+    log = getLogger()
+    logging.config.fileConfig("config/logging.conf")
 
     log.debug('Parse開始')
     parsed = objectify.parse(open('書き出したデータ.xml'))
@@ -53,15 +56,18 @@ def main(args):
 
     cycling_sum = cycling.groupby(pd.Grouper(freq='D')).sum()
     body_mass_mean = body_mass.groupby(pd.Grouper(freq='D')).mean()
-    bfp_mean = bfp.groupby(pd.Grouper(freq='D')).mean()
     bmi_mean = bmi.groupby(pd.Grouper(freq='D')).mean()
+    bfp_mean = bfp.groupby(pd.Grouper(freq='D')).mean()
 
     df_new = pd.DataFrame(index=body_mass_mean.index, columns=[])
 
     df_new['体重'] = body_mass_mean['value']
-    df_new['体脂肪率'] = bfp_mean['value']
     df_new['BMI'] = bmi_mean['value']
+    df_new['体脂肪率'] = bfp_mean['value']
     df_new['自転車走行距離'] = cycling_sum['value']
+
+    # 新しいデータフレームに、新しいカラムを追加、InnerJoinで。
+    # df_newnew1 = pd.concat([df_newnew, df1.foo], axis=1, join='inner')
 
     df_new.interpolate().to_csv('./df_new{0}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S')),
                                 float_format='%.4f', index_label='key')
@@ -103,28 +109,6 @@ def create_dict_array(parsed):
     #  } ってなる
     data = [({key: value for key, value in element.attrib.items() if key in headers}) for element in root.Record]
     return data
-
-
-def logger_configure(logger):
-    # cf: https://qiita.com/mimitaro/items/9fa7e054d60290d13bfc
-
-    from logging import StreamHandler, Formatter, DEBUG, INFO
-
-    logger.propagate = False
-
-    # ハンドラに渡すエラーメッセージの最低レベル
-    logger.setLevel(DEBUG)
-
-    # Handler 作成
-    console_handler = StreamHandler()
-    # 出力するエラーメッセージの最低レベル(loggerには、ハンドラが複数設定出来るので、ハンドラごとに出力レベルを設定出来る)
-    console_handler.setLevel(DEBUG)
-    formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    # Handler 作成 以上
-
-    logger.addHandler(console_handler)
-    return logger
 
 
 if __name__ == "__main__":
